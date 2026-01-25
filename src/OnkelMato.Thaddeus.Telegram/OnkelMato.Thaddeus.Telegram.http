@@ -1,0 +1,6 @@
+@OnkelMato.Thaddeus.Telegram_HostAddress = http://localhost:5219
+
+GET {{OnkelMato.Thaddeus.Telegram_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

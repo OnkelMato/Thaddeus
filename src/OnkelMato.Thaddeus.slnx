@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="CalDAV.NET/CalDAV.NET.csproj" />
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
+  <Project Path="OnkelMato.Thaddeus.Telegram/OnkelMato.Thaddeus.Telegram.csproj" />
+</Solution>

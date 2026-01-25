@@ -1,0 +1,21 @@
+services:
+  onkelmato.thaddeus.telegram:
+    image: ${DOCKER_REGISTRY-}onkelmatothaddeustelegram
+    build:
+      context: .
+      dockerfile: OnkelMato.Thaddeus.Telegram/Dockerfile
+
+    links:
+      - "radicale:radicale"
+
+  radicale:
+    image: docker.io/tomsquest/docker-radicale:latest
+    container_name: radicale
+    restart: unless-stopped
+    ports:
+      - 5232:5232
+    volumes:
+      - ./.docker/radicale/data:/data
+      - ./.docker/radicale/config:/config
+    environment:
+      - TZ=Europe/Berlin
