@@ -8,7 +8,7 @@ namespace CalDAV.NET.Internal
 {
     internal class CalDAVClient
     {
-        private static readonly HttpClient _client = new HttpClient();
+        private static HttpClient _client;
         private static readonly HttpMethod _propfindMethod = new HttpMethod("PROPFIND");
         private static readonly HttpMethod _reportMethod = new HttpMethod("REPORT");
 
@@ -16,6 +16,11 @@ namespace CalDAV.NET.Internal
 
         public CalDAVClient()
         {
+            var handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            _client = new HttpClient(handler);
+
+
             _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/xml"));
             _client.DefaultRequestHeaders.Add("Prefer", "return-minimal");
             _client.DefaultRequestHeaders.Add("Depth", "1");

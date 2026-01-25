@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using CalDAV.NET.Enums;
 using CalDAV.NET.Interfaces;
+using Ical.Net.CalendarComponents;
 
 namespace CalDAV.NET.Internal
 {
@@ -234,6 +235,17 @@ namespace CalDAV.NET.Internal
                 .Where(x => x.Key.LocalName == "calendar-data")
                 .SelectMany(x => Ical.Net.Calendar.Load<Ical.Net.Calendar>(x.Value))
                 .SelectMany(x => x.Events)
+                .SelectMany(x => x.GetOccurrences().Select(y => new CalendarEvent()
+                {
+                    Start =y.Period.StartTime,
+                    End = y.Period.EndTime,
+                    Summary = x.Summary,
+                    Location = x.Location,
+                    Uid = x.Uid,
+                    DtStart = y.Period.StartTime,
+                    DtEnd = y.Period.EffectiveEndTime,
+                    // todo fix me
+                } ))
                 .Select(internalEvent => new Event(internalEvent));
         }
 
