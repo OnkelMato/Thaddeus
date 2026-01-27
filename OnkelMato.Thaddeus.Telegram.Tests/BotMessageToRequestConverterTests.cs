@@ -56,6 +56,54 @@ namespace OnkelMato.Thaddeus.Telegram.Tests
             req.Date.Should().Be(new DateOnly(now.Year, now.Month, 15));
         }
 
+        [Test(Description = "Request termine heute")]
+        public void ConvertHeuteTermineToMessage()
+        {
+            var now = DateTime.Now;
+            var message = new Message()
+            {
+                Text = "Termine heute",
+                Chat = new Chat { Id = 12345 }
+            };
+            var sut = new BotMessageToRequestConverter();
+            var actual = sut.Convert(message, UpdateType.Message);
+            actual.Should().BeOfType<GetAppointmentsRequest>();
+            var req = (actual as GetAppointmentsRequest)!;
+            req.Date.Should().Be(new DateOnly(now.Year, now.Month, now.Day));
+        }
+
+        [Test(Description = "Request termine gestern")]
+        public void ConvertGesternTermineToMessage()
+        {
+            var now = DateTime.Now.AddDays(-1);
+            var message = new Message()
+            {
+                Text = "Termine gestern",
+                Chat = new Chat { Id = 12345 }
+            };
+            var sut = new BotMessageToRequestConverter();
+            var actual = sut.Convert(message, UpdateType.Message);
+            actual.Should().BeOfType<GetAppointmentsRequest>();
+            var req = (actual as GetAppointmentsRequest)!;
+            req.Date.Should().Be(new DateOnly(now.Year, now.Month, now.Day));
+        }
+
+        [Test(Description = "Request termine morgen")]
+        public void ConvertMorgenTermineToMessage()
+        {
+            var now = DateTime.Now.AddDays(1);
+            var message = new Message()
+            {
+                Text = "Termine morgen",
+                Chat = new Chat { Id = 12345 }
+            };
+            var sut = new BotMessageToRequestConverter();
+            var actual = sut.Convert(message, UpdateType.Message);
+            actual.Should().BeOfType<GetAppointmentsRequest>();
+            var req = (actual as GetAppointmentsRequest)!;
+            req.Date.Should().Be(new DateOnly(now.Year, now.Month, now.Day));
+        }
+
         [Test]
         public void ConvertFullTerminToMessage()
         {

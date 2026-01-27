@@ -67,6 +67,13 @@ public class BotMessageToRequestConverter : IBotMessageToRequestConverter
         if (DateOnly.TryParseExact(date, "d.M.yyyy", out var dteResult))
             return dteResult;
 
+        switch (date.ToLower())
+        {
+            case "gestern": return DateOnly.FromDateTime(DateTime.Now.AddDays(-1));
+            case "heute": return DateOnly.FromDateTime(DateTime.Now);
+            case "morgen": return DateOnly.FromDateTime(DateTime.Now.AddDays(1));
+        }
+
         var parts = date.Split('.', StringSplitOptions.RemoveEmptyEntries);
         switch (parts.Length)
         {

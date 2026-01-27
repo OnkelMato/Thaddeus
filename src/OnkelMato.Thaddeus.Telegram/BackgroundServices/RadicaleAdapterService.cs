@@ -60,9 +60,6 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
 
         var evt = cal.CreateEvent(message.Appointment.Title, message.Appointment.Start, message.Appointment.End);
         await cal.SaveChangesAsync();
-        //client.AddOrUpdateEvent(appointment, new Calendar() {Name = "default", ProductId = cal.Uid});
-
-        //cal.Events.Add(appointment);
     }
 
     public async Task HandleAsync(GetAppointmentsRequest message, CancellationToken cancellationToken)
@@ -82,7 +79,7 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
         }
 
         var startOfDay = new DateTime(message.Date.Year, message.Date.Month, message.Date.Day, 0, 0, 0);
-        var endOfDay = startOfDay.AddDays(1).AddSeconds(-1);
+        var endOfDay = startOfDay.AddDays(1);
 
         var entries = cal.Events.Where(x =>
             x.Start>= startOfDay && x.End <= endOfDay).ToList();
@@ -95,7 +92,7 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
         });
         if (message.Appointments.Count() == 0)
         {
-            await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, $"Keine Termine für den {message.Date} eingetragen"), cancellationToken);
+            await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, $"Keine Termine f&uuml;r den {message.Date:d.M.yyyy} eingetragen"), cancellationToken);
             return;
         }
 
