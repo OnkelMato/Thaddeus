@@ -60,6 +60,8 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
 
         var evt = cal.CreateEvent(message.Appointment.Title, message.Appointment.Start, message.Appointment.End);
         await cal.SaveChangesAsync();
+        var response = $"Termin '{message.Appointment.Title}' am {message.Appointment.Start:d.M.yyyy} von {message.Appointment.Start:HH:mm} bis {message.Appointment.End:HH:mm} hinzugef&uuml;gt.";
+        await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, response), cancellationToken);
     }
 
     public async Task HandleAsync(GetAppointmentsRequest message, CancellationToken cancellationToken)
