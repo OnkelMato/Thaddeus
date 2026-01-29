@@ -9,6 +9,8 @@ namespace OnkelMato.Thaddeus.Telegram.Tests
     [TestFixture]
     public class BotMessageToRequestConverterTests
     {
+        #region Termine Tests
+
         [Test(Description = "Request termine")]
         public void ConvertFullTermineToMessage()
         {
@@ -104,6 +106,30 @@ namespace OnkelMato.Thaddeus.Telegram.Tests
             req.Date.Should().Be(new DateOnly(now.Year, now.Month, now.Day));
         }
 
+        #endregion
+
+        #region Termin tests
+
+        [Test]
+        public void ConvertFullDayTerminToMessage()
+        {
+            var message = new Message()
+            {
+                Text = "Termin 15.8.2024 Meeting with team",
+                Chat = new Chat { Id = 12345 }
+            };
+
+            var sut = new BotMessageToRequestConverter();
+
+            var actual = sut.Convert(message, UpdateType.Message);
+
+            actual.Should().BeOfType<AddAppointmentRequest>();
+            var req = actual as AddAppointmentRequest;
+            req.Appointment.Start.Should().Be(new DateTime(2024, 8, 15, 0, 0, 0));
+            req.Appointment.End.Should().Be(new DateTime(2024, 8, 16, 0, 0, 0));
+            req.Appointment.Title.Should().Be("Meeting with team");
+        }
+
         [Test]
         public void ConvertFullTerminToMessage()
         {
@@ -186,5 +212,25 @@ namespace OnkelMato.Thaddeus.Telegram.Tests
             req.Appointment.Title.Should().Be("Meeting with team");
         }
 
+        #endregion
+
+        #region Wann tests
+
+        [Test]
+        public void ConvertWannIstToMessage()
+        {
+            var message = new Message()
+            {
+                Text = "Wann ist Team Meeting",
+                Chat = new Chat { Id = 12345 }
+            };
+            var sut = new BotMessageToRequestConverter();
+            var actual = sut.Convert(message, UpdateType.Message);
+            actual.Should().BeOfType<FindAppointmentTimeRequest>();
+            var req = (actual as FindAppointmentTimeRequest)!;
+            req.SearchTerm.Should().Be("Team Meeting");
+        }
+
+        #endregion
     }
 }

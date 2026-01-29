@@ -1,12 +1,14 @@
 using CalDAV.NET;
+using CalDAV.NET.Interfaces;
 using Microsoft.Extensions.Options;
 using OnkelMato.Thaddeus.Telegram.Config;
 using OnkelMato.Thaddeus.Telegram.PublishSubscribe;
 using OnkelMato.Thaddeus.Telegram.Requests;
+using System.Xml.Linq;
 
 namespace OnkelMato.Thaddeus.Telegram.BackgroundServices;
 
-public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequest>, IHandle<GetAppointmentsRequest>
+public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequest>, IHandle<GetAppointmentsRequest>, IHandle<FindAppointmentTimeRequest>
 {
     private readonly Dictionary<string, Lazy<Client>> _userClient = new();
     private readonly Dictionary<string, string> _userDefaultCalendar = new();
@@ -71,36 +73,80 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
         var client = lazyClient.Value;
         var calendarId = _userDefaultCalendar[message.TelegramUserId];
 
-        var cal = client.GetCalendarAsync(calendarId).Result
-                  ?? client.GetCalendarsAsync().Result.FirstOrDefault();
+        var allCalendars = (await client.GetCalendarsAsync()).ToArray();
 
-        if (cal is null)
+        if (allCalendars.Length == 0)
         {
-            await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, "cannot get calendar."), cancellationToken);
+            await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, "cannot get calendars or no calendars found."), cancellationToken);
             return;
         }
 
         var startOfDay = new DateTime(message.Date.Year, message.Date.Month, message.Date.Day, 0, 0, 0);
         var endOfDay = startOfDay.AddDays(1);
 
-        var entries = cal.Events.Where(x =>
-            x.Start>= startOfDay && x.End <= endOfDay).ToList();
+        var entries = allCalendars.SelectMany(cal => cal
+                .Events
+                .Where(x => x.Start >= startOfDay && x.End <= endOfDay)
+                .Select(x => new { Calendar = cal.DisplayName, Event = x }))
+            .ToList();
 
         message.Appointments = entries.Select(x => new Appointment
         {
-            Start = x.Start,
-            End = x.End,
-            Title = x.Summary,
-        });
-        if (message.Appointments.Count() == 0)
+            Start = x.Event.Start,
+            End = x.Event.End,
+            Title = x.Event.Summary,
+            Calendar = x.Calendar
+        }).ToArray();
+        if (!message.Appointments.Any())
         {
             await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, $"Keine Termine f&uuml;r den {message.Date:d.M.yyyy} eingetragen"), cancellationToken);
             return;
         }
 
         var response = string.Empty;
-        foreach (var appointment in message.Appointments)
-            response += $"{appointment.Start:HH:mm} -> {appointment.Title} (bis {appointment.End:HH:mm})\n";
+        foreach (var appointment in message.Appointments.OrderBy(x => x.Calendar))
+            response += $"[{appointment.Calendar}] {appointment.Start:HH:mm} -> {appointment.Title} (bis {appointment.End:HH:mm})\n";
+        await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, response), cancellationToken);
+    }
+
+    public async Task HandleAsync(FindAppointmentTimeRequest message, CancellationToken cancellationToken)
+    {
+        if (!_userClient.TryGetValue(message.TelegramUserId, out var lazyClient)) return;
+
+        var client = lazyClient.Value;
+
+        var allCalendars = (await client.GetCalendarsAsync()).ToArray();
+
+        if (allCalendars.Length == 0)
+        {
+            await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, "cannot get calendars or no calendars found."), cancellationToken);
+            return;
+        }
+
+        var term = message.SearchTerm.Trim().ToLower();
+        var midnight = DateOnly.FromDateTime(DateTime.Now).ToDateTime(new TimeOnly(0, 0));
+        var entries = allCalendars.SelectMany(cal => cal
+                .Events
+                .Where(x => x.Start >= midnight && x.Summary.ToLower().Contains(term))
+                .Select(x => new { Calendar = cal.DisplayName, Event = x }))
+            .ToList();
+
+        message.Appointments = entries.Select(x => new Appointment
+        {
+            Start = x.Event.Start,
+            End = x.Event.End,
+            Title = x.Event.Summary,
+            Calendar = x.Calendar
+        }).ToArray();
+        if (!message.Appointments.Any())
+        {
+            await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, $"Keine Termine für '{message.SearchTerm}' gefunden"), cancellationToken);
+            return;
+        }
+
+        var response = string.Empty;
+        foreach (var appointment in message.Appointments.OrderBy(x => x.Calendar))
+            response += $"[{appointment.Calendar}] {appointment.Start:HH:mm} -> {appointment.Title} (bis {appointment.End:HH:mm})\n";
         await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, response), cancellationToken);
     }
 }

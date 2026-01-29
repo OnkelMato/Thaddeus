@@ -1,5 +1,4 @@
-using System.Globalization;
-using Microsoft.Extensions.Localization;
+using System.Reflection;
 using OnkelMato.Thaddeus.Telegram.Requests;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -10,6 +9,15 @@ public class BotMessageToRequestConverter : IBotMessageToRequestConverter
 {
     public RequestBase Convert(Message message, UpdateType type)
     {
+        if (message.Text.StartsWith("Wann ist ", StringComparison.InvariantCultureIgnoreCase))
+        {
+            var parts = message.Text.Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 3) // todo return result with error message
+                return new EmptyRequestBase(message.Chat.Id, message.Chat.Id.ToString());
+
+            return new FindAppointmentTimeRequest(message.Chat.Id, message.Chat.Id.ToString(), parts[2]);
+        }
+
         if (message.Text.StartsWith("Termine ", StringComparison.InvariantCultureIgnoreCase))
         {
             var date = ParseDate(message.Text.Split(' ')[1]);
@@ -21,8 +29,8 @@ public class BotMessageToRequestConverter : IBotMessageToRequestConverter
 
         if (message.Text.StartsWith("Termin ", StringComparison.InvariantCultureIgnoreCase))
         {
-            var part = message.Text.Split(' ',4, StringSplitOptions.TrimEntries);
-            if (part.Length < 4) // todo return result with error message
+            var part = message.Text.Split(' ', 4, StringSplitOptions.TrimEntries);
+            if (part.Length < 3) // todo return result with error message
                 return new EmptyRequestBase(message.Chat.Id, message.Chat.Id.ToString());
 
             if (string.IsNullOrWhiteSpace(part[3])) // todo return result with error message
@@ -33,14 +41,26 @@ public class BotMessageToRequestConverter : IBotMessageToRequestConverter
                 return new EmptyRequestBase(message.Chat.Id, message.Chat.Id.ToString());
 
             var time = ParseTime(part[2]);
-            if (time == null) // todo return result with error message
-                return new EmptyRequestBase(message.Chat.Id, message.Chat.Id.ToString());
+            string title;
+            TimeOnly endTime;
+            if (time == null) // all day event, so re-split text
+            {
+                part = message.Text.Split(' ', 3, StringSplitOptions.TrimEntries);
+                title = part[2];
+                time = new TimeOnly(0, 0);
+                endTime = new TimeOnly(23, 59);
+            }
+            else
+            {
+                title = part[3];
+                endTime = time.Value.AddMinutes(29); // because we add a minute later. yeah, quite a hack
+            }
 
             return new AddAppointmentRequest(message.Chat.Id, message.Chat.Id.ToString(), new Appointment()
             {
                 Start = date.Value.ToDateTime(time.Value),
-                End = date.Value.ToDateTime(time.Value).AddMinutes(30),
-                Title = part[3]
+                End = date.Value.ToDateTime(endTime).AddMinutes(1), // so we get a full-day event
+                Title = title
             });
         }
 
@@ -50,6 +70,7 @@ public class BotMessageToRequestConverter : IBotMessageToRequestConverter
 
     private TimeOnly? ParseTime(string time)
     {
+        time = time.Trim(',', '.'); // get rid of trailing comma
         if (TimeOnly.TryParseExact(time, "H:mm", out var timeResult))
             return timeResult;
 

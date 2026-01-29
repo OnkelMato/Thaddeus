@@ -6,4 +6,6 @@ public class Appointment
     public DateTime End { get; set; }
     public string Summary { get; set; } = null!;
     public string Title { get; set; } = null!;
+
+    public string Calendar { get; set; } = null!;
 }

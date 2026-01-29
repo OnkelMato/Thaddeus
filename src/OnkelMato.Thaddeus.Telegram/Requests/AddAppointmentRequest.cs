@@ -27,3 +27,13 @@ public class AddAppointmentRequest : RequestBase
 
     public Appointment Appointment { get; set; }
 }
+
+public class FindAppointmentTimeRequest : RequestBase
+{
+    public FindAppointmentTimeRequest(long chatId, string telegramUserId, string searchTerm) : base(chatId, telegramUserId)
+    {
+        SearchTerm = searchTerm;
+    }
+    public string SearchTerm { get; set; }
+    public IEnumerable<Appointment> Appointments { get; set; } = [];
+}
