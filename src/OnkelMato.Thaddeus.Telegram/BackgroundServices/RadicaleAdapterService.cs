@@ -105,7 +105,13 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
 
         var response = string.Empty;
         foreach (var appointment in message.Appointments.OrderBy(x => x.Calendar))
-            response += $"[{appointment.Calendar}] {appointment.Start:HH:mm} -> {appointment.Title} (bis {appointment.End:HH:mm})\n";
+        {
+            var allDay = (appointment.End - appointment.Start) == TimeSpan.FromHours(24);
+            if (allDay)
+                response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} '{appointment.Title}' (ganztägig)\n";
+            else
+                response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} um {appointment.Start:HH:mm} '{appointment.Title}' (bis {appointment.End:HH:mm})\n";
+        }
         await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, response), cancellationToken);
     }
 
@@ -115,6 +121,7 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
 
         var client = lazyClient.Value;
 
+        var calendarId = _userDefaultCalendar[message.TelegramUserId];
         var allCalendars = (await client.GetCalendarsAsync()).ToArray();
 
         if (allCalendars.Length == 0)
@@ -128,7 +135,7 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
         var entries = allCalendars.SelectMany(cal => cal
                 .Events
                 .Where(x => x.Start >= midnight && x.Summary.ToLower().Contains(term))
-                .Select(x => new { Calendar = cal.DisplayName, Event = x }))
+                .Select(x => new { Calendar = cal.DisplayName, Event = x, CalUid = cal.Uid }))
             .ToList();
 
         message.Appointments = entries.Select(x => new Appointment
@@ -136,7 +143,7 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
             Start = x.Event.Start,
             End = x.Event.End,
             Title = x.Event.Summary,
-            Calendar = x.Calendar
+            Calendar = x.CalUid == calendarId ? "" : $"[{x.Calendar}] "
         }).ToArray();
         if (!message.Appointments.Any())
         {
@@ -146,7 +153,13 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
 
         var response = string.Empty;
         foreach (var appointment in message.Appointments.OrderBy(x => x.Calendar))
-            response += $"[{appointment.Calendar}] {appointment.Start:HH:mm} -> {appointment.Title} (bis {appointment.End:HH:mm})\n";
+        {
+            var allDay = (appointment.End - appointment.Start) == TimeSpan.FromHours(24);
+            if (allDay)
+                response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} '{appointment.Title}' (ganztägig)\n";
+            else
+                response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} um {appointment.Start:HH:mm} '{appointment.Title}' (bis {appointment.End:HH:mm})\n";
+        }
         await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, response), cancellationToken);
     }
 }
