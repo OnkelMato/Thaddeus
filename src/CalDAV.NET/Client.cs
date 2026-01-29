@@ -85,6 +85,9 @@ namespace CalDAV.NET
                 throw new ArgumentNullException(nameof(uid));
             }
 
+            if (uid == Username)
+                return GetCalendarWithUriAsync($"{uid}");
+
             return GetCalendarWithUriAsync($"{Username}/{uid}");
         }
 

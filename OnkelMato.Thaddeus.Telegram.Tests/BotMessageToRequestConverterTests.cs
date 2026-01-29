@@ -131,6 +131,25 @@ namespace OnkelMato.Thaddeus.Telegram.Tests
         }
 
         [Test]
+        public void ConvertFullDayTerminHeuteToMessage()
+        {
+            var message = new Message()
+            {
+                Text = "Termin heute test",
+                Chat = new Chat { Id = 12345 }
+            };
+
+            var sut = new BotMessageToRequestConverter();
+
+            var actual = sut.Convert(message, UpdateType.Message);
+
+            actual.Should().BeOfType<AddAppointmentRequest>();
+            var req = actual as AddAppointmentRequest;
+            var now = DateTime.Now;
+            req.Appointment.Start.Should().Be(new DateTime(now.Year, now.Month, now.Day, 0, 0, 0));
+        }
+
+        [Test]
         public void ConvertFullTerminToMessage()
         {
             var message = new Message()

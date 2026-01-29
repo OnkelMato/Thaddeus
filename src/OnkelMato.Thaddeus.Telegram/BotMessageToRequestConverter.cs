@@ -1,4 +1,3 @@
-using System.Reflection;
 using OnkelMato.Thaddeus.Telegram.Requests;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -33,9 +32,6 @@ public class BotMessageToRequestConverter : IBotMessageToRequestConverter
             if (part.Length < 3) // todo return result with error message
                 return new EmptyRequestBase(message.Chat.Id, message.Chat.Id.ToString());
 
-            if (string.IsNullOrWhiteSpace(part[3])) // todo return result with error message
-                return new EmptyRequestBase(message.Chat.Id, message.Chat.Id.ToString());
-
             var date = ParseDate(part[1]);
             if (date == null) // todo return result with error message
                 return new EmptyRequestBase(message.Chat.Id, message.Chat.Id.ToString());
@@ -55,6 +51,9 @@ public class BotMessageToRequestConverter : IBotMessageToRequestConverter
                 title = part[3];
                 endTime = time.Value.AddMinutes(29); // because we add a minute later. yeah, quite a hack
             }
+
+            if (string.IsNullOrWhiteSpace(title)) // todo return result with error message
+                return new EmptyRequestBase(message.Chat.Id, message.Chat.Id.ToString());
 
             return new AddAppointmentRequest(message.Chat.Id, message.Chat.Id.ToString(), new Appointment()
             {

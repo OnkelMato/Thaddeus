@@ -39,8 +39,7 @@ public class BotBackgroundService : IHostedService, IHandle<SendBotMessageReques
 
                     var message = _botRequestToRequestConverter.Convert(sender, e);
                     await _eventAggregator.PublishAsync(message, cancellationToken);
-
-                    
+                   
                 }
                 catch (Exception ex)
                 {

@@ -1,5 +1,4 @@
 using CalDAV.NET;
-using CalDAV.NET.Interfaces;
 using Microsoft.Extensions.Options;
 using OnkelMato.Thaddeus.Telegram.Config;
 using OnkelMato.Thaddeus.Telegram.PublishSubscribe;
@@ -34,7 +33,11 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
 
         foreach (var user in _usersConfig.CurrentValue)
         {
-            _userClient.Add(user.TelegramUserId, new Lazy<Client>(() => new Client(serverUrl, user.RadicaleUser, user.RadicalePassword)));
+            var userServerUrl = serverUrl;
+            if (!string.IsNullOrWhiteSpace(user.RadicaleAlternateServer))
+                userServerUrl = new Uri(user.RadicaleAlternateServer);
+
+            _userClient.Add(user.TelegramUserId, new Lazy<Client>(() => new Client(userServerUrl, user.RadicaleUser, user.RadicalePassword)));
             _userDefaultCalendar.Add(user.TelegramUserId, user.RadicaleDefaultCalendar);
         }
     }
@@ -50,9 +53,12 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
 
         var client = lazyClient.Value;
         var calendarId = _userDefaultCalendar[message.TelegramUserId];
+        //if (string.IsNullOrWhiteSpace(calendarId) || calendarId == Guid.Empty.ToString())
+        //    calendarId = Guid.NewGuid().ToString();
 
+        var calendars = await client.GetCalendarsAsync();
         var cal = client.GetCalendarAsync(calendarId).Result
-                  ?? client.GetCalendarsAsync().Result.FirstOrDefault();
+                  ?? calendars?.FirstOrDefault();
 
         if (cal is null)
         {
