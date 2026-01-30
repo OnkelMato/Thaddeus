@@ -59,6 +59,6 @@ public class BotBackgroundService : IHostedService, IHandle<SendBotMessageReques
 
     public async Task HandleAsync(SendBotMessageRequest message, CancellationToken cancellationToken)
     {
-        await Bot.SendMessage(message.ChatId, message.Message, ParseMode.Markdown);
+        await Bot.SendMessage(message.ChatId, message.Message, ParseMode.Html);
     }
 }

@@ -1,5 +1,4 @@
 using CalDAV.NET;
-using CalDAV.NET.Interfaces;
 using Microsoft.Extensions.Options;
 using OnkelMato.Thaddeus.Telegram.Config;
 using OnkelMato.Thaddeus.Telegram.PublishSubscribe;
@@ -87,7 +86,7 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
         var entries = allCalendars.SelectMany(cal => cal
                 .Events
                 .Where(x => x.Start >= startOfDay && x.End <= endOfDay)
-                .Select(x => new { Calendar = cal.DisplayName, Event = x }))
+                .Select(x => new { Calendar = cal.DisplayName, Event = x, CalUid = cal.Uid }))
             .ToList();
 
         message.Appointments = entries.Select(x => new Appointment
@@ -95,8 +94,8 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
             Start = x.Event.Start,
             End = x.Event.End,
             Title = x.Event.Summary,
-            Calendar = x.Calendar
-        }).ToArray();
+            Calendar = x.CalUid == calendarId ? "" : $"[{x.Calendar}] "
+        }).OrderBy(x => x.Calendar).ThenBy(x => x.Start).ToArray();
         if (!message.Appointments.Any())
         {
             await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, $"Keine Termine f&uuml;r den {message.Date:d.M.yyyy} eingetragen"), cancellationToken);
@@ -104,11 +103,11 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
         }
 
         var response = string.Empty;
-        foreach (var appointment in message.Appointments.OrderBy(x => x.Calendar))
+        foreach (var appointment in message.Appointments)
         {
             var allDay = (appointment.End - appointment.Start) == TimeSpan.FromHours(24);
             if (allDay)
-                response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} '{appointment.Title}' (ganztägig)\n";
+                response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} '{appointment.Title}' (ganzt&auml;gig)\n";
             else
                 response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} um {appointment.Start:HH:mm} '{appointment.Title}' (bis {appointment.End:HH:mm})\n";
         }
@@ -144,19 +143,20 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
             End = x.Event.End,
             Title = x.Event.Summary,
             Calendar = x.CalUid == calendarId ? "" : $"[{x.Calendar}] "
-        }).ToArray();
+        }).OrderBy(x => x.Calendar).ThenBy(x => x.Start).ToArray();
+
         if (!message.Appointments.Any())
         {
-            await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, $"Keine Termine für '{message.SearchTerm}' gefunden"), cancellationToken);
+            await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, $"Keine Termine f&uuml;r '{message.SearchTerm}' gefunden"), cancellationToken);
             return;
         }
 
         var response = string.Empty;
-        foreach (var appointment in message.Appointments.OrderBy(x => x.Calendar))
+        foreach (var appointment in message.Appointments)
         {
             var allDay = (appointment.End - appointment.Start) == TimeSpan.FromHours(24);
             if (allDay)
-                response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} '{appointment.Title}' (ganztägig)\n";
+                response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} '{appointment.Title}' (ganzt&auml;gig)\n";
             else
                 response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} um {appointment.Start:HH:mm} '{appointment.Title}' (bis {appointment.End:HH:mm})\n";
         }
