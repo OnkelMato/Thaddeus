@@ -107,9 +107,9 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
         {
             var allDay = (appointment.End - appointment.Start) == TimeSpan.FromHours(24);
             if (allDay)
-                response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} '{appointment.Title}' (ganzt&auml;gig)\n";
+                response += $"{appointment.Calendar} '{appointment.Title}' (ganztägig)\n";
             else
-                response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} um {appointment.Start:HH:mm} '{appointment.Title}' (bis {appointment.End:HH:mm})\n";
+                response += $"{appointment.Calendar} {appointment.Start:HH:mm} '{appointment.Title}' (bis {appointment.End:HH:mm})\n";
         }
         await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, response), cancellationToken);
     }
@@ -156,7 +156,7 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
         {
             var allDay = (appointment.End - appointment.Start) == TimeSpan.FromHours(24);
             if (allDay)
-                response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} '{appointment.Title}' (ganzt&auml;gig)\n";
+                response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} '{appointment.Title}' (ganztägig)\n";
             else
                 response += $"{appointment.Calendar}am {appointment.Start:d.M.yyyy} um {appointment.Start:HH:mm} '{appointment.Title}' (bis {appointment.End:HH:mm})\n";
         }
