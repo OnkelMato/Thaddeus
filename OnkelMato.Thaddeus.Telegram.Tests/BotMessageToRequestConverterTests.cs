@@ -111,6 +111,27 @@ namespace OnkelMato.Thaddeus.Telegram.Tests
         #region Termin tests
 
         [Test]
+        public void ConvertTerminMitDauerToMessage()
+        {
+            var message = new Message()
+            {
+                Text = "Termin 15.8.2024 14:00 Meeting with team. Dauer 1h",
+                Chat = new Chat { Id = 12345 }
+            };
+
+            var sut = new BotMessageToRequestConverter();
+
+            var actual = sut.Convert(message, UpdateType.Message);
+
+            actual.Should().BeOfType<AddAppointmentRequest>();
+            var req = actual as AddAppointmentRequest;
+            req.Appointment.Start.Should().Be(new DateTime(2024, 8, 15, 14, 0, 0));
+            req.Appointment.End.Should().Be(new DateTime(2024, 8, 15, 15, 0, 0));
+            req.Appointment.Title.Should().Be("Meeting with team");
+        }
+
+
+        [Test]
         public void ConvertFullDayTerminToMessage()
         {
             var message = new Message()

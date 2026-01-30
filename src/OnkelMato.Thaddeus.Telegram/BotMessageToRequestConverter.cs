@@ -41,19 +41,33 @@ public class BotMessageToRequestConverter : IBotMessageToRequestConverter
                 return new EmptyRequestBase(message.Chat.Id, message.Chat.Id.ToString());
 
             var time = ParseTime(part[2]);
+
+            var opts = ((time == null)
+                ? part[2].ToLower().Split('.').Skip(1)
+                : part[3].ToLower().Split('.').Skip(1))
+                .ToDictionary(x => x.Trim().Split(' ', 2)[0], x => x.Trim().Split(' ', 2)[1]);
+            if (opts.ContainsKey("dauer"))
+            {
+                if (opts["dauer"].EndsWith("min")) opts["dauer"] = opts["dauer"][..^3].Trim();
+                else if (opts["dauer"].EndsWith("h")) opts["dauer"] = (int.Parse(opts["dauer"][..^1].Trim()) * 60).ToString();
+                else opts["dauer"] = "30"; // default
+            }
+            else
+                opts["dauer"] = "30";
+
             string title;
             TimeOnly endTime;
             if (time == null) // all day event, so re-split text
             {
                 part = message.Text.Split(' ', 3, StringSplitOptions.TrimEntries);
-                title = part[2];
+                title = part[2].Split('.')[0];
                 time = new TimeOnly(0, 0);
                 endTime = new TimeOnly(23, 59);
             }
             else
             {
-                title = part[3];
-                endTime = time.Value.AddMinutes(29); // because we add a minute later. yeah, quite a hack
+                title = part[3].Split('.')[0];
+                endTime = time.Value.AddMinutes(int.Parse(opts["dauer"]) - 1); // because we add a minute later. yeah, quite a hack
             }
 
             return new AddAppointmentRequest(message.Chat.Id, message.Chat.Id.ToString(), new Appointment()
