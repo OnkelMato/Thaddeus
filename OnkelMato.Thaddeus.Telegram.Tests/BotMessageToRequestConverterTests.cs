@@ -128,6 +128,28 @@ namespace OnkelMato.Thaddeus.Telegram.Tests
             req.Appointment.Start.Should().Be(new DateTime(2024, 8, 15, 14, 0, 0));
             req.Appointment.End.Should().Be(new DateTime(2024, 8, 15, 15, 0, 0));
             req.Appointment.Title.Should().Be("Meeting with team");
+            req.Appointment.Drive.Should().Be(TimeSpan.Zero);
+        }
+
+        [Test]
+        public void ConvertTerminMitFahrtToMessage()
+        {
+            var message = new Message()
+            {
+                Text = "Termin 15.8.2024 14:00 Meeting with team. Dauer 1h. Fahrt 30min",
+                Chat = new Chat { Id = 12345 }
+            };
+
+            var sut = new BotMessageToRequestConverter();
+
+            var actual = sut.Convert(message, UpdateType.Message);
+
+            actual.Should().BeOfType<AddAppointmentRequest>();
+            var req = actual as AddAppointmentRequest;
+            req.Appointment.Start.Should().Be(new DateTime(2024, 8, 15, 14, 0, 0));
+            req.Appointment.End.Should().Be(new DateTime(2024, 8, 15, 15, 0, 0));
+            req.Appointment.Title.Should().Be("Meeting with team");
+            req.Appointment.Drive.Should().Be(TimeSpan.FromMinutes(30));
         }
 
 

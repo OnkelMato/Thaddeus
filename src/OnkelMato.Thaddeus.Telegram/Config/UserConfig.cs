@@ -6,4 +6,6 @@ public class UserConfig
     public string RadicaleUser { get; set; } = null!;
     public string RadicalePassword { get; set; } = null!;
     public string RadicaleDefaultCalendar { get; set; } = null!;
+    // ReSharper disable once InconsistentNaming
+    public string CalendarPAT { get; set; } = null!;
 }

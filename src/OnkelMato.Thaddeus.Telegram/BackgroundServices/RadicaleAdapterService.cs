@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 using OnkelMato.Thaddeus.Telegram.Config;
 using OnkelMato.Thaddeus.Telegram.PublishSubscribe;
 using OnkelMato.Thaddeus.Telegram.Requests;
-using System.Xml.Linq;
 
 namespace OnkelMato.Thaddeus.Telegram.BackgroundServices;
 
@@ -58,8 +57,11 @@ public class RadicaleAdapterService : IHostedService, IHandle<AddAppointmentRequ
             await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, "cannot get calendar."), cancellationToken);
             return;
         }
-
-        var evt = cal.CreateEvent(message.Appointment.Title, message.Appointment.Start, message.Appointment.End);
+        var evtDrive = (message.Appointment.Drive == TimeSpan.Zero)
+            ? null
+            :  cal.CreateEvent("Anfahrt", message.Appointment.Start - message.Appointment.Drive, message.Appointment.Start); 
+        var evtAppt = cal.CreateEvent(message.Appointment.Title, message.Appointment.Start, message.Appointment.End);
+        
         await cal.SaveChangesAsync();
         var response = $"Termin '{message.Appointment.Title}' am {message.Appointment.Start:d.M.yyyy} von {message.Appointment.Start:HH:mm} bis {message.Appointment.End:HH:mm} hinzugef&uuml;gt.";
         await _eventAggregator.PublishAsync(new SendBotMessageRequest(message.ChatId, message.TelegramUserId, response), cancellationToken);

@@ -55,6 +55,15 @@ public class BotMessageToRequestConverter : IBotMessageToRequestConverter
             else
                 opts["dauer"] = "30";
 
+            if (opts.ContainsKey("fahrt"))
+            {
+                if (opts["fahrt"].EndsWith("min")) opts["fahrt"] = opts["fahrt"][..^3].Trim();
+                else if (opts["fahrt"].EndsWith("h")) opts["fahrt"] = (int.Parse(opts["fahrt"][..^1].Trim()) * 60).ToString();
+                else opts["fahrt"] = "0"; // default
+            }
+            else
+                opts["fahrt"] = "0";
+
             string title;
             TimeOnly endTime;
             if (time == null) // all day event, so re-split text
@@ -74,7 +83,8 @@ public class BotMessageToRequestConverter : IBotMessageToRequestConverter
             {
                 Start = date.Value.ToDateTime(time.Value),
                 End = date.Value.ToDateTime(endTime).AddMinutes(1), // so we get a full-day event
-                Title = title
+                Title = title,
+                Drive = TimeSpan.FromMinutes(int.Parse(opts["fahrt"]))
             });
         }
 
